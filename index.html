@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Meme Generator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <h1 class="app__title">Simple Meme Generator</h1>
+        <p class="app__subtitle">
+          Upload an image, add text, and download your meme. All in your browser.
+        </p>
+      </header>
+
+      <section class="app__content">
+        <section class="controls">
+          <div class="controls__group">
+            <label for="image-input" class="controls__label">Upload image</label>
+            <input
+              id="image-input"
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/gif"
+              class="controls__file-input"
+            />
+            <p class="controls__hint">
+              Supported formats: JPG, PNG, GIF. Image stays on your device.
+            </p>
+          </div>
+
+          <div class="controls__group">
+            <label for="top-text" class="controls__label">Top text</label>
+            <input
+              id="top-text"
+              type="text"
+              class="controls__text-input"
+              placeholder="E.g. WHEN YOU FINALLY LEARN JAVASCRIPT"
+            />
+          </div>
+
+          <div class="controls__group">
+            <label for="bottom-text" class="controls__label">Bottom text</label>
+            <input
+              id="bottom-text"
+              type="text"
+              class="controls__text-input"
+              placeholder="BUT NOW EVERYTHING IS A CALLBACK"
+            />
+          </div>
+
+          <div class="controls__actions">
+            <button id="download-btn" class="controls__button" disabled>
+              Download meme
+            </button>
+            <p id="status-message" class="controls__status" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <section class="preview" aria-label="Meme preview">
+          <div class="preview__canvas-wrapper">
+            <canvas id="meme-canvas"></canvas>
+            <div id="preview-placeholder" class="preview__placeholder">
+              <p>Upload an image to see your meme preview here.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+
+
