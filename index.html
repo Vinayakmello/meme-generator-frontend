@@ -3,103 +3,112 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simple Meme Generator</title>
+    <title>Meme Generator</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app">
-      <header class="app__header">
-        <h1 class="app__title">Simple Meme Generator</h1>
-        <p class="app__subtitle">
-          Upload an image, add text, and download your meme. All in your browser.
+    <main class="container">
+      <header class="header">
+        <h1 class="title">Meme Generator</h1>
+        <p class="subtitle">
+          Create memes instantly. Upload an image, add text, and download—all in your browser.
         </p>
       </header>
 
-      <section class="app__content">
-        <section class="controls">
-          <div class="controls__group">
-            <label for="image-input" class="controls__label">Upload image</label>
-            <input
-              id="image-input"
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/gif"
-              class="controls__file-input"
-            />
-            <p class="controls__hint">
-              Supported formats: JPG, PNG, GIF. Image stays on your device.
-            </p>
-          </div>
-
-          <div class="controls__group">
-            <p class="controls__hint">
-              Click on text in the canvas to edit. Drag to move.
-            </p>
-          </div>
-
-          <div class="controls__group">
-            <label for="font-size" class="controls__label">Font size</label>
-            <div class="controls__slider-wrapper">
+      <div class="content-grid">
+        <aside class="controls-panel">
+          <section class="panel-section">
+            <h2 class="section-title">Image</h2>
+            <div class="form-group">
+              <label for="image-input" class="label">Upload image</label>
               <input
-                id="font-size"
-                type="range"
-                min="20"
-                max="120"
-                value="60"
-                class="controls__slider"
+                id="image-input"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/gif"
+                class="file-input"
               />
-              <span id="font-size-value" class="controls__slider-value">60</span>
+              <p class="hint">
+                Supported formats: JPG, PNG, GIF. All processing happens locally.
+              </p>
             </div>
-          </div>
+          </section>
 
-          <div class="controls__group">
-            <label for="text-color" class="controls__label">Text color</label>
-            <div class="controls__color-wrapper">
+          <section class="panel-section">
+            <h2 class="section-title">Text</h2>
+            <div class="form-group">
+              <p class="hint">
+                Click on the canvas to add or edit text. Drag text to reposition.
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="font-size" class="label">Font size</label>
+              <div class="slider-group">
+                <input
+                  id="font-size"
+                  type="range"
+                  min="20"
+                  max="120"
+                  value="60"
+                  class="slider"
+                />
+                <span id="font-size-value" class="slider-value">60</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="text-color" class="label">Text color</label>
+              <div class="color-group">
+                <input
+                  id="text-color"
+                  type="color"
+                  value="#ffffff"
+                  class="color-input"
+                />
+                <span class="color-label">White</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="stroke-color" class="label">Outline color</label>
+              <div class="color-group">
+                <input
+                  id="stroke-color"
+                  type="color"
+                  value="#000000"
+                  class="color-input"
+                />
+                <span class="color-label">Black</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2 class="section-title">Actions</h2>
+            <div class="form-group">
+              <button id="download-btn" class="button button-primary" disabled>
+                Download meme
+              </button>
+              <p id="status-message" class="status" aria-live="polite"></p>
+            </div>
+          </section>
+        </aside>
+
+        <section class="preview-panel">
+          <div class="preview-card">
+            <h2 class="preview-title">Preview</h2>
+            <div class="canvas-container">
+              <canvas id="meme-canvas"></canvas>
+              <div id="preview-placeholder" class="placeholder">
+                <p>Upload an image to see your meme preview here.</p>
+              </div>
               <input
-                id="text-color"
-                type="color"
-                value="#ffffff"
-                class="controls__color-input"
+                id="text-editor"
+                type="text"
+                class="text-editor"
+                style="display: none;"
               />
-              <span class="controls__color-label">White</span>
             </div>
-          </div>
-
-          <div class="controls__group">
-            <label for="stroke-color" class="controls__label">Outline color</label>
-            <div class="controls__color-wrapper">
-              <input
-                id="stroke-color"
-                type="color"
-                value="#000000"
-                class="controls__color-input"
-              />
-              <span class="controls__color-label">Black</span>
-            </div>
-          </div>
-
-          <div class="controls__actions">
-            <button id="download-btn" class="controls__button" disabled>
-              Download meme
-            </button>
-            <p id="status-message" class="controls__status" aria-live="polite"></p>
           </div>
         </section>
-
-        <section class="preview" aria-label="Meme preview">
-          <div class="preview__canvas-wrapper">
-            <canvas id="meme-canvas"></canvas>
-            <div id="preview-placeholder" class="preview__placeholder">
-              <p>Upload an image to see your meme preview here.</p>
-            </div>
-            <input
-              id="text-editor"
-              type="text"
-              class="text-editor"
-              style="display: none;"
-            />
-          </div>
-        </section>
-      </section>
+      </div>
     </main>
 
     <script src="script.js"></script>
