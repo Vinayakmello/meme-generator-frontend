@@ -7,97 +7,23 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="container">
-      <header class="header">
-        <h1 class="title">Meme Generator</h1>
-        <p class="subtitle">
-          Create memes instantly. Upload an image, add text, and download—all in your browser.
-        </p>
-      </header>
+    <main class="app-root">
+      <section class="canvas-section">
+        <div class="canvas-header">
+          <div>
+            <h1 class="app-title">Meme Generator</h1>
+            <p class="app-subtitle">
+              Pick a meme, add your text on the canvas, zoom, and download.
+            </p>
+          </div>
+        </div>
 
-      <div class="content-grid">
-        <aside class="controls-panel">
-          <section class="panel-section">
-            <h2 class="section-title">Image</h2>
-            <div class="form-group">
-              <label for="image-input" class="label">Upload image</label>
-              <input
-                id="image-input"
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/gif"
-                class="file-input"
-              />
-              <p class="hint">
-                Supported formats: JPG, PNG, GIF. All processing happens locally.
-              </p>
-            </div>
-          </section>
-
-          <section class="panel-section">
-            <h2 class="section-title">Text</h2>
-            <div class="form-group">
-              <p class="hint">
-                Click on the canvas to add or edit text. Drag text to reposition.
-              </p>
-            </div>
-            <div class="form-group">
-              <label for="font-size" class="label">Font size</label>
-              <div class="slider-group">
-                <input
-                  id="font-size"
-                  type="range"
-                  min="20"
-                  max="120"
-                  value="60"
-                  class="slider"
-                />
-                <span id="font-size-value" class="slider-value">60</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="text-color" class="label">Text color</label>
-              <div class="color-group">
-                <input
-                  id="text-color"
-                  type="color"
-                  value="#ffffff"
-                  class="color-input"
-                />
-                <span class="color-label">White</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="stroke-color" class="label">Outline color</label>
-              <div class="color-group">
-                <input
-                  id="stroke-color"
-                  type="color"
-                  value="#000000"
-                  class="color-input"
-                />
-                <span class="color-label">Black</span>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel-section">
-            <h2 class="section-title">Actions</h2>
-            <div class="form-group">
-              <button id="download-btn" class="button button-primary" disabled>
-                Download meme
-              </button>
-              <p id="status-message" class="status" aria-live="polite"></p>
-            </div>
-          </section>
-        </aside>
-
-        <section class="preview-panel">
-          <div class="preview-card">
-            <h2 class="preview-title">Preview</h2>
-            <div class="canvas-container">
+        <div class="canvas-shell">
+          <div class="canvas-frame">
+            <div class="canvas-inner">
               <canvas id="meme-canvas"></canvas>
               <div id="preview-placeholder" class="placeholder">
-                <p>Upload an image to see your meme preview here.</p>
+                <p>Choose a meme or upload your own to start.</p>
               </div>
               <input
                 id="text-editor"
@@ -107,12 +33,173 @@
               />
             </div>
           </div>
-        </section>
-      </div>
+
+          <div class="canvas-toolbar">
+            <div class="canvas-hint">
+              Click on the canvas to add/edit text. Drag text to move it.
+            </div>
+            <div class="zoom-controls">
+              <span class="zoom-label">Zoom</span>
+              <button
+                type="button"
+                id="zoom-out"
+                class="icon-button"
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <span id="zoom-value" class="zoom-value">100%</span>
+              <button
+                type="button"
+                id="zoom-in"
+                class="icon-button"
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="side-panel-inner">
+          <section class="panel-card">
+            <div class="panel-card-header">
+              <h2 class="panel-title">All memes</h2>
+              <div class="panel-divider"></div>
+            </div>
+
+            <div class="memes-grid" aria-label="Meme templates">
+              <button
+                class="meme-thumb"
+                type="button"
+                data-meme-src="https://i.imgflip.com/1bij.jpg"
+                aria-label="Distracted boyfriend meme"
+              ></button>
+              <button
+                class="meme-thumb"
+                type="button"
+                data-meme-src="https://i.imgflip.com/26am.jpg"
+                aria-label="Grumpy cat meme"
+              ></button>
+              <button
+                class="meme-thumb"
+                type="button"
+                data-meme-src="https://i.imgflip.com/1ur9b0.jpg"
+                aria-label="Drake hotline bling meme"
+              ></button>
+
+              <button
+                class="meme-thumb"
+                type="button"
+                data-meme-src="https://i.imgflip.com/9ehk.jpg"
+                aria-label="Success kid meme"
+              ></button>
+              <button
+                class="meme-thumb meme-thumb--placeholder"
+                type="button"
+                disabled
+                aria-label="Empty meme slot"
+              ></button>
+              <button
+                class="meme-thumb meme-thumb--placeholder"
+                type="button"
+                disabled
+                aria-label="Empty meme slot"
+              ></button>
+            </div>
+
+            <button
+              type="button"
+              class="button upload-button"
+              id="upload-trigger"
+            >
+              Upload your own
+            </button>
+            <input
+              id="image-input"
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/gif"
+              class="file-input-hidden"
+            />
+          </section>
+
+          <section class="panel-card">
+            <div class="panel-card-header">
+              <h2 class="panel-title">Style</h2>
+              <div class="panel-divider"></div>
+            </div>
+
+            <div class="style-row">
+              <div class="style-label">Font Size</div>
+              <div class="font-size-control">
+                <button
+                  type="button"
+                  id="font-size-increase"
+                  class="icon-button"
+                  aria-label="Increase font size"
+                >
+                  +
+                </button>
+                <span id="font-size-value" class="font-size-value">25</span>
+                <button
+                  type="button"
+                  id="font-size-decrease"
+                  class="icon-button"
+                  aria-label="Decrease font size"
+                >
+                  −
+                </button>
+              </div>
+            </div>
+
+            <div class="style-row">
+              <label class="style-label" for="text-color">Text Colour</label>
+              <button
+                type="button"
+                id="text-color-swatch"
+                class="color-swatch"
+                aria-label="Change text colour"
+              ></button>
+              <input
+                id="text-color"
+                type="color"
+                value="#ffffff"
+                class="color-input-hidden"
+              />
+            </div>
+
+            <div class="style-row">
+              <label class="style-label" for="stroke-color">Outline Colour</label>
+              <button
+                type="button"
+                id="stroke-color-swatch"
+                class="color-swatch"
+                aria-label="Change outline colour"
+              ></button>
+              <input
+                id="stroke-color"
+                type="color"
+                value="#000000"
+                class="color-input-hidden"
+              />
+            </div>
+          </section>
+
+          <button
+            id="download-btn"
+            class="download-cta"
+            type="button"
+            disabled
+          >
+            Download your meme
+          </button>
+          <p id="status-message" class="status" aria-live="polite"></p>
+        </div>
+      </aside>
     </main>
 
     <script src="script.js"></script>
   </body>
 </html>
-
-

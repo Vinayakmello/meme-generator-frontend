@@ -4,11 +4,19 @@
   const statusMessage = document.getElementById("status-message");
   const canvas = document.getElementById("meme-canvas");
   const placeholder = document.getElementById("preview-placeholder");
-  const fontSizeSlider = document.getElementById("font-size");
-  const fontSizeValue = document.getElementById("font-size-value");
   const textColorInput = document.getElementById("text-color");
   const strokeColorInput = document.getElementById("stroke-color");
   const textEditor = document.getElementById("text-editor");
+  const zoomInBtn = document.getElementById("zoom-in");
+  const zoomOutBtn = document.getElementById("zoom-out");
+  const zoomValueEl = document.getElementById("zoom-value");
+  const fontSizeIncreaseBtn = document.getElementById("font-size-increase");
+  const fontSizeDecreaseBtn = document.getElementById("font-size-decrease");
+  const fontSizeDisplay = document.getElementById("font-size-value");
+  const textColorSwatch = document.getElementById("text-color-swatch");
+  const strokeColorSwatch = document.getElementById("stroke-color-swatch");
+  const memeThumbs = document.querySelectorAll("[data-meme-src]");
+  const uploadTrigger = document.getElementById("upload-trigger");
 
   if (!canvas || !fileInput || !downloadBtn) {
     console.warn("Meme generator: Missing required DOM elements.");
@@ -17,6 +25,15 @@
 
   const ctx = canvas.getContext("2d");
   let image = null;
+  let zoom = 1;
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 3;
+  const ZOOM_STEP = 0.25;
+
+  // Base font size controlled via +/- UI
+  let baseFontSizeValue = 25;
+  const MIN_FONT_SIZE_VALUE = 12;
+  const MAX_FONT_SIZE_VALUE = 120;
   
   // Text objects with properties
   const topText = {
@@ -45,6 +62,12 @@
   const CLICK_THRESHOLD = 5; // pixels - if moved more than this, it's a drag
   const CLICK_TIME_THRESHOLD = 200; // ms - if held longer, it's a drag
 
+  function updateZoomDisplay() {
+    if (zoomValueEl) {
+      zoomValueEl.textContent = `${Math.round(zoom * 100)}%`;
+    }
+  }
+
   function setStatus(message) {
     if (statusMessage) {
       statusMessage.textContent = message || "";
@@ -57,8 +80,8 @@
   }
 
   function fitCanvasToImage(img) {
-    const maxWidth = 800;
-    const maxHeight = 800;
+    const maxWidth = 1024;
+    const maxHeight = 1024;
     let { width, height } = img;
 
     const widthRatio = maxWidth / width;
@@ -70,6 +93,18 @@
 
     canvas.width = width;
     canvas.height = height;
+  }
+
+  function getCanvasCenter() {
+    return { x: canvas.width / 2, y: canvas.height / 2 };
+  }
+
+  function withIdentityTransform(fn) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const result = fn();
+    ctx.restore();
+    return result;
   }
 
   function drawTextLine(textObj, fontSizePx) {
@@ -99,25 +134,27 @@
   // Get text bounding box for click detection
   function getTextBounds(textObj, fontSizePx) {
     if (!textObj.text) return null;
-    
-    ctx.font = `bold ${fontSizePx}px Impact, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    
-    const textUpper = textObj.text.toUpperCase();
-    const metrics = ctx.measureText(textUpper);
-    const textWidth = metrics.width;
-    const textHeight = fontSizePx;
-    
-    // Add padding around text for easier clicking
-    const padding = fontSizePx * 0.3;
-    
-    return {
-      left: textObj.x - textWidth / 2 - padding,
-      right: textObj.x + textWidth / 2 + padding,
-      top: textObj.y - textHeight / 2 - padding,
-      bottom: textObj.y + textHeight / 2 + padding
-    };
+
+    return withIdentityTransform(() => {
+      ctx.font = `bold ${fontSizePx}px Impact, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      const textUpper = textObj.text.toUpperCase();
+      const metrics = ctx.measureText(textUpper);
+      const textWidth = metrics.width;
+      const textHeight = fontSizePx;
+
+      // Add padding around text for easier clicking
+      const padding = fontSizePx * 0.3;
+
+      return {
+        left: textObj.x - textWidth / 2 - padding,
+        right: textObj.x + textWidth / 2 + padding,
+        top: textObj.y - textHeight / 2 - padding,
+        bottom: textObj.y + textHeight / 2 + padding
+      };
+    });
   }
   
   // Detect which text (if any) was clicked
@@ -146,17 +183,21 @@
     if (!textEditor) return;
     
     editingText = textObj === topText ? 'top' : 'bottom';
-    
+
+    const center = getCanvasCenter();
     const rect = canvas.getBoundingClientRect();
     const canvasWrapper = canvas.parentElement;
     const wrapperRect = canvasWrapper.getBoundingClientRect();
-    
-    // Calculate position relative to canvas wrapper
+
+    // Map logical coordinates through zoom for editor placement
+    const scaledX = center.x + (canvasX - center.x) * zoom;
+    const scaledY = center.y + (canvasY - center.y) * zoom;
+
     const scaleX = rect.width / canvas.width;
     const scaleY = rect.height / canvas.height;
-    const x = rect.left - wrapperRect.left + (canvasX * scaleX);
-    const y = rect.top - wrapperRect.top + (canvasY * scaleY);
-    
+    const x = rect.left - wrapperRect.left + scaledX * scaleX;
+    const y = rect.top - wrapperRect.top + scaledY * scaleY;
+
     // Position editor above the text
     const fontSize = getCurrentFontSize();
     textEditor.style.fontSize = `${fontSize}px`;
@@ -181,6 +222,9 @@
   }
 
   function drawMeme() {
+    // Reset any existing transforms before drawing
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
     if (!image) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       setPlaceholderVisible(true);
@@ -190,11 +234,18 @@
     setPlaceholderVisible(false);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Apply zoom around canvas center so image + text scale together
+    const center = getCanvasCenter();
+    ctx.translate(center.x, center.y);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-center.x, -center.y);
+
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-    // Use font size from slider, scaled relative to canvas width
-    const sliderValue = fontSizeSlider ? parseInt(fontSizeSlider.value) : 60;
-    const baseFontSize = (canvas.width / 800) * sliderValue; // Scale based on canvas size
+    // Use font size from controls, scaled relative to canvas width
+    const sliderValue = baseFontSizeValue;
+    const baseFontSize = (canvas.width / 800) * sliderValue; // logical size; zoom scales visually
     const fontSize = Math.max(18, Math.round(baseFontSize));
     const margin = canvas.height * 0.06; // Top/bottom margin for text
 
@@ -215,9 +266,20 @@
   
   function getCurrentFontSize() {
     if (!image) return 60;
-    const sliderValue = fontSizeSlider ? parseInt(fontSizeSlider.value) : 60;
+    const sliderValue = baseFontSizeValue;
     const baseFontSize = (canvas.width / 800) * sliderValue;
     return Math.max(18, Math.round(baseFontSize));
+  }
+
+  function setBaseFontSize(value) {
+    baseFontSizeValue = Math.min(
+      MAX_FONT_SIZE_VALUE,
+      Math.max(MIN_FONT_SIZE_VALUE, value)
+    );
+    if (fontSizeDisplay) {
+      fontSizeDisplay.textContent = String(baseFontSizeValue);
+    }
+    drawMeme();
   }
 
   function handleFileChange(event) {
@@ -300,10 +362,15 @@
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    return {
-      x: (event.clientX - rect.left) * scaleX,
-      y: (event.clientY - rect.top) * scaleY
-    };
+    const xCanvas = (event.clientX - rect.left) * scaleX;
+    const yCanvas = (event.clientY - rect.top) * scaleY;
+
+    // Convert to logical coordinates (undo zoom around center)
+    const center = getCanvasCenter();
+    const logicalX = center.x + (xCanvas - center.x) / zoom;
+    const logicalY = center.y + (yCanvas - center.y) / zoom;
+
+    return { x: logicalX, y: logicalY };
   }
   
   function handleMouseDown(event) {
@@ -442,8 +509,8 @@
 
   // Update font size display value
   function updateFontSizeDisplay() {
-    if (fontSizeValue && fontSizeSlider) {
-      fontSizeValue.textContent = fontSizeSlider.value;
+    if (fontSizeDisplay) {
+      fontSizeDisplay.textContent = String(baseFontSizeValue);
     }
   }
   
@@ -454,21 +521,110 @@
 
   fileInput.addEventListener("change", handleFileChange);
   downloadBtn.addEventListener("click", handleDownload);
-  
-  // Control event listeners
-  if (fontSizeSlider) {
-    fontSizeSlider.addEventListener("input", () => {
-      updateFontSizeDisplay();
-      drawMeme();
+
+  // Zoom controls
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener("click", () => {
+      const next = Math.min(MAX_ZOOM, zoom + ZOOM_STEP);
+      if (next !== zoom) {
+        zoom = next;
+        updateZoomDisplay();
+        drawMeme();
+      }
     });
   }
-  
-  if (textColorInput) {
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener("click", () => {
+      const next = Math.max(MIN_ZOOM, zoom - ZOOM_STEP);
+      if (next !== zoom) {
+        zoom = next;
+        updateZoomDisplay();
+        drawMeme();
+      }
+    });
+  }
+
+  // Font size controls
+  if (fontSizeIncreaseBtn) {
+    fontSizeIncreaseBtn.addEventListener("click", () => {
+      setBaseFontSize(baseFontSizeValue + 2);
+    });
+  }
+
+  if (fontSizeDecreaseBtn) {
+    fontSizeDecreaseBtn.addEventListener("click", () => {
+      setBaseFontSize(baseFontSizeValue - 2);
+    });
+  }
+
+  // Colour controls with visible swatches
+  if (textColorSwatch && textColorInput) {
+    textColorSwatch.style.backgroundColor = textColorInput.value;
+    textColorSwatch.addEventListener("click", () => {
+      textColorInput.click();
+    });
+    textColorInput.addEventListener("input", () => {
+      textColorSwatch.style.backgroundColor = textColorInput.value;
+      drawMeme();
+    });
+  } else if (textColorInput) {
     textColorInput.addEventListener("input", drawMeme);
   }
-  
-  if (strokeColorInput) {
+
+  if (strokeColorSwatch && strokeColorInput) {
+    strokeColorSwatch.style.backgroundColor = strokeColorInput.value;
+    strokeColorSwatch.addEventListener("click", () => {
+      strokeColorInput.click();
+    });
+    strokeColorInput.addEventListener("input", () => {
+      strokeColorSwatch.style.backgroundColor = strokeColorInput.value;
+      drawMeme();
+    });
+  } else if (strokeColorInput) {
     strokeColorInput.addEventListener("input", drawMeme);
+  }
+
+  // Meme templates
+  function loadImageFromSrc(src) {
+    if (!src) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      image = img;
+      fitCanvasToImage(img);
+      zoom = 1;
+      updateZoomDisplay();
+      // Reset positions but keep text content
+      topText.x = 0;
+      topText.y = 0;
+      bottomText.x = 0;
+      bottomText.y = 0;
+      drawMeme();
+      downloadBtn.disabled = false;
+      setStatus("Template loaded. Click on the canvas to add/edit text. Drag to move.");
+    };
+    img.onerror = () => {
+      setStatus("Could not load this template. Try another one.");
+    };
+    setStatus("Loading meme template...");
+    img.src = src;
+  }
+
+  memeThumbs.forEach((thumb) => {
+    thumb.addEventListener("click", () => {
+      const src = thumb.getAttribute("data-meme-src");
+      if (src) {
+        loadImageFromSrc(src);
+      }
+    });
+  });
+
+  // Upload trigger button in "All memes" card
+  if (uploadTrigger) {
+    uploadTrigger.addEventListener("click", () => {
+      fileInput.click();
+    });
   }
   
   // Canvas drag event listeners
@@ -485,6 +641,7 @@
 
   // Initial setup
   updateFontSizeDisplay();
+  updateZoomDisplay();
   setPlaceholderVisible(true);
 })();
 
