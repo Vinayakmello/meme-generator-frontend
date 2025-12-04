@@ -9,54 +9,35 @@
   <body>
     <main class="app-root">
       <section class="canvas-section">
-        <div class="canvas-header">
-          <div>
-            <h1 class="app-title">Meme Generator</h1>
-            <p class="app-subtitle">
-              Pick a meme, add your text on the canvas, zoom, and download.
-            </p>
-          </div>
-        </div>
-
         <div class="canvas-shell">
-          <div class="canvas-frame">
-            <div class="canvas-inner">
-              <canvas id="meme-canvas"></canvas>
-              <div id="preview-placeholder" class="placeholder">
-                <p>Choose a meme or upload your own to start.</p>
+            <div class="canvas-frame">
+            <!--
+              Workspace:
+              - #workspace behaves like an infinite canvas area (Figma-style)
+              - #artboard-wrapper is what we pan/zoom via CSS transforms
+              - The actual <canvas> lives inside the white "artboard" and is
+                what we export on download. Pan/zoom affects only the wrapper.
+            -->
+            <div id="workspace" class="workspace">
+              <div id="artboard-wrapper" class="artboard-wrapper">
+                <canvas id="memeCanvas"></canvas>
+                <div id="preview-placeholder" class="placeholder">
+                  <p>Choose a meme or upload your own to start.</p>
+                </div>
+                <input
+                  id="text-editor"
+                  type="text"
+                  class="text-editor"
+                  style="display: none;"
+                />
               </div>
-              <input
-                id="text-editor"
-                type="text"
-                class="text-editor"
-                style="display: none;"
-              />
+              <div id="drag-overlay"></div>
             </div>
           </div>
 
           <div class="canvas-toolbar">
             <div class="canvas-hint">
               Click on the canvas to add/edit text. Drag text to move it.
-            </div>
-            <div class="zoom-controls">
-              <span class="zoom-label">Zoom</span>
-              <button
-                type="button"
-                id="zoom-out"
-                class="icon-button"
-                aria-label="Zoom out"
-              >
-                −
-              </button>
-              <span id="zoom-value" class="zoom-value">100%</span>
-              <button
-                type="button"
-                id="zoom-in"
-                class="icon-button"
-                aria-label="Zoom in"
-              >
-                +
-              </button>
             </div>
           </div>
         </div>
