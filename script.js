@@ -8,15 +8,16 @@
   const strokeColorInput = document.getElementById("stroke-color");
   const textEditor = document.getElementById("text-editor");
   const zoomValueEl = document.getElementById("zoom-value");
-  const fontSizeIncreaseBtn = document.getElementById("font-size-increase");
-  const fontSizeDecreaseBtn = document.getElementById("font-size-decrease");
-  const fontSizeDisplay = document.getElementById("font-size-value");
+  const fontSizeSlider = document.getElementById("fontSizeSlider");
+  const fontSizeValue = document.getElementById("fontSizeValue");
   const textColorSwatch = document.getElementById("text-color-swatch");
   const strokeColorSwatch = document.getElementById("stroke-color-swatch");
-  const memeThumbs = document.querySelectorAll("[data-meme-src]");
   const uploadTrigger = document.getElementById("upload-trigger");
   const workspace = document.getElementById("workspace");
   const artboardWrapper = document.getElementById("artboard-wrapper");
+  const allMemesGrid = document.getElementById("allMemesGrid");
+  const myMemesGrid = document.getElementById("myMemesGrid");
+  const myMemesEmptyState = document.getElementById("myMemesEmptyState");
 
   if (!canvas || !fileInput || !downloadBtn || !workspace || !artboardWrapper) {
     console.warn("Meme generator: Missing required DOM elements.");
@@ -25,6 +26,18 @@
 
   const ctx = canvas.getContext("2d");
   let image = null;
+
+  // All meme templates now come from this custom folder.
+  // Add/remove entries here to match files in /custom-memes.
+  const CUSTOM_MEMES = [
+    // Example placeholders – edit these filenames manually to match what you add:
+     { id: "meme-1", src: "custom-memes/meme-1.jpg", label: "Meme 1" },
+    // { id: "meme-2", src: "custom-memes/meme-2.png", label: "Meme 2" },
+  ];
+
+  // Custom memes storage (for uploaded images)
+  let customMemes = []; // array of { id, dataUrl }
+  const MY_MEMES_STORAGE_KEY = "myMemesLibrary";
 
   // Text objects array (supports unlimited layers)
   const texts = [];
@@ -54,7 +67,7 @@
   let panStartClientX = 0;
   let panStartClientY = 0;
 
-  // Base font size controlled via +/- UI
+  // Base font size controlled via slider UI
   let baseFontSizeValue = 25;
   const MIN_FONT_SIZE_VALUE = 12;
   const MAX_FONT_SIZE_VALUE = 120;
@@ -277,63 +290,25 @@
       MAX_FONT_SIZE_VALUE,
       Math.max(MIN_FONT_SIZE_VALUE, value)
     );
-    if (fontSizeDisplay) {
-      fontSizeDisplay.textContent = String(baseFontSizeValue);
+    if (fontSizeSlider) {
+      fontSizeSlider.value = String(baseFontSizeValue);
+    }
+    if (fontSizeValue) {
+      fontSizeValue.textContent = String(baseFontSizeValue);
     }
     drawMeme();
   }
 
   /**
    * Core loader for local image files (from file input or drag & drop).
-   * Optionally adds a thumbnail into the "All memes" grid for re-selection.
+   * Saves uploaded images to the custom memes library.
    */
-  function loadImageFromFile(file, { addToMemesGrid = true } = {}) {
+  function loadImageFromFile(file) {
     const reader = new FileReader();
     reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        image = img;
-        fitCanvasToImage(img);
-        // Reset text objects when new image loads
-        texts.length = 0;
-        editingTextObj = null;
-
-        // Reset workspace pan/zoom for new image and center it
-        scale = 1;
-        centerArtboardInWorkspace();
-        updateZoomDisplay();
-
-        drawMeme();
-        downloadBtn.disabled = false;
-        setStatus(
-          "Image loaded. Click on the canvas to add/edit text. Drag to move."
-        );
-
-        // Optionally add thumbnail to the "All memes" grid
-        if (addToMemesGrid) {
-          const memesGrid = document.querySelector(".memes-grid");
-          if (memesGrid && typeof reader.result === "string") {
-            const thumb = document.createElement("button");
-            thumb.type = "button";
-            thumb.className = "meme-thumb";
-            thumb.setAttribute("aria-label", "Uploaded meme");
-            const imgEl = document.createElement("img");
-            imgEl.src = reader.result;
-            imgEl.alt = "Uploaded meme thumbnail";
-            thumb.appendChild(imgEl);
-            thumb.addEventListener("click", () => {
-              loadImageFromSrc(reader.result);
-            });
-            memesGrid.prepend(thumb);
-          }
-        }
-      };
-      img.onerror = () => {
-        setStatus("Could not load this image. Please try a different file.");
-        image = null;
-        downloadBtn.disabled = false;
-      };
-      img.src = reader.result;
+      const dataUrl = reader.result;
+      // Load image into canvas and save to custom memes
+      onImageUploaded(dataUrl);
     };
     reader.onerror = () => {
       setStatus("Error reading file. Please try again.");
@@ -571,24 +546,25 @@
 
   // Update font size display value
   function updateFontSizeDisplay() {
-    if (fontSizeDisplay) {
-      fontSizeDisplay.textContent = String(baseFontSizeValue);
+    if (fontSizeSlider) {
+      fontSizeSlider.value = String(baseFontSizeValue);
+    }
+    if (fontSizeValue) {
+      fontSizeValue.textContent = String(baseFontSizeValue);
     }
   }
 
   fileInput.addEventListener("change", handleFileChange);
   downloadBtn.addEventListener("click", handleDownload);
 
-  // Font size controls
-  if (fontSizeIncreaseBtn) {
-    fontSizeIncreaseBtn.addEventListener("click", () => {
-      setBaseFontSize(baseFontSizeValue + 2);
-    });
-  }
+  // Font size slider control
+  if (fontSizeSlider && fontSizeValue) {
+    fontSizeSlider.value = String(baseFontSizeValue);
+    fontSizeValue.textContent = String(baseFontSizeValue);
 
-  if (fontSizeDecreaseBtn) {
-    fontSizeDecreaseBtn.addEventListener("click", () => {
-      setBaseFontSize(baseFontSizeValue - 2);
+    fontSizeSlider.addEventListener("input", () => {
+      const size = Number(fontSizeSlider.value);
+      setBaseFontSize(size);
     });
   }
 
@@ -647,22 +623,142 @@
     img.src = src;
   }
 
-  memeThumbs.forEach((thumb) => {
-    const src = thumb.getAttribute("data-meme-src");
-    if (src) {
-      const imgEl = document.createElement("img");
-      imgEl.src = src;
-      imgEl.alt = thumb.getAttribute("aria-label") || "Meme thumbnail";
-      thumb.appendChild(imgEl);
+  // Render all memes from custom folder
+  function renderAllMemesFromCustomFolder() {
+    if (!allMemesGrid) return;
+
+    allMemesGrid.innerHTML = "";
+
+    if (!Array.isArray(CUSTOM_MEMES) || !CUSTOM_MEMES.length) {
+      const empty = document.createElement("div");
+      empty.className = "memes-empty-state";
+      empty.textContent =
+        "Add images to /custom-memes and list them in CUSTOM_MEMES to see them here.";
+      allMemesGrid.appendChild(empty);
+      return;
     }
 
-    thumb.addEventListener("click", () => {
-      const src = thumb.getAttribute("data-meme-src");
-      if (src) {
-        loadImageFromSrc(src);
-      }
+    CUSTOM_MEMES.forEach((meme, index) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "meme-thumbnail";
+
+      const img = document.createElement("img");
+      img.src = meme.src;
+      img.alt = meme.label || `Meme ${index + 1}`;
+
+      tile.appendChild(img);
+
+      tile.addEventListener("click", () => {
+        // Reuse existing logic for loading a template into the canvas
+        loadImageFromSrc(meme.src);
+      });
+
+      allMemesGrid.appendChild(tile);
     });
-  });
+  }
+
+  // Load image from data URL (for custom memes)
+  function loadImageFromDataUrl(dataUrl) {
+    if (!dataUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      image = img;
+      fitCanvasToImage(img);
+      // Reset workspace view when switching templates and centre the artboard
+      scale = 1;
+      centerArtboardInWorkspace();
+      updateZoomDisplay();
+      // Clear any existing text layers when switching templates
+      texts.length = 0;
+      editingTextObj = null;
+      drawMeme();
+      downloadBtn.disabled = false;
+      setStatus(
+        "Image loaded. Click on the canvas to add/edit text. Drag to move."
+      );
+    };
+    img.onerror = () => {
+      setStatus("Could not load this image. Try another one.");
+    };
+    setStatus("Loading image...");
+    img.src = dataUrl;
+  }
+
+  // Custom memes storage functions
+  function loadCustomMemesFromStorage() {
+    try {
+      const raw = localStorage.getItem(MY_MEMES_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      customMemes = parsed;
+      renderCustomMemes();
+    } catch (e) {
+      console.error("Failed to load custom memes", e);
+    }
+  }
+
+  function saveCustomMemesToStorage() {
+    try {
+      localStorage.setItem(MY_MEMES_STORAGE_KEY, JSON.stringify(customMemes));
+    } catch (e) {
+      console.error("Failed to save custom memes", e);
+    }
+  }
+
+  // Render custom memes thumbnails
+  function renderCustomMemes() {
+    if (!myMemesGrid) return;
+
+    // Clear everything
+    myMemesGrid.innerHTML = "";
+
+    if (!customMemes.length) {
+      // Recreate empty state element
+      const emptyState = document.createElement("div");
+      emptyState.id = "myMemesEmptyState";
+      emptyState.className = "memes-empty-state";
+      emptyState.textContent = "No custom memes yet. Upload or drag & drop to save them here.";
+      myMemesGrid.appendChild(emptyState);
+      return;
+    }
+
+    customMemes.forEach((meme, index) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "custom-meme-thumbnail";
+
+      const img = document.createElement("img");
+      img.src = meme.dataUrl;
+      img.alt = `Custom meme ${index + 1}`;
+
+      tile.appendChild(img);
+
+      tile.addEventListener("click", () => {
+        loadImageFromDataUrl(meme.dataUrl);
+      });
+
+      myMemesGrid.appendChild(tile);
+    });
+  }
+
+  // Handle image upload and save to custom memes
+  function onImageUploaded(dataUrl) {
+    // Load the image into the canvas
+    loadImageFromDataUrl(dataUrl);
+
+    // Save to custom meme library
+    const meme = {
+      id: Date.now(),
+      dataUrl: dataUrl,
+    };
+    customMemes.push(meme);
+    saveCustomMemesToStorage();
+    renderCustomMemes();
+  }
+
+  // Built-in meme rendering removed - now using CUSTOM_MEMES array
 
   // Upload trigger button in "All memes" card
   if (uploadTrigger) {
@@ -882,4 +978,10 @@
   updateZoomDisplay();
   setPlaceholderVisible(true);
   updateTransform();
+  
+  // Render custom memes from /custom-memes folder
+  renderAllMemesFromCustomFolder();
+  
+  // Load uploaded custom memes from storage on startup
+  loadCustomMemesFromStorage();
 })();

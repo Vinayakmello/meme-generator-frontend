@@ -45,55 +45,25 @@
 
       <aside class="side-panel">
         <div class="side-panel-inner">
-          <section class="panel-card">
-            <div class="panel-card-header">
-              <h2 class="panel-title">All memes</h2>
-              <div class="panel-divider"></div>
+          <header class="side-panel-header">
+            <h1 class="side-panel-title">Templates &amp; Style</h1>
+            <p class="side-panel-subtitle">
+              Choose a meme, adjust style, then download.
+            </p>
+          </header>
+
+          <section class="side-panel-section side-panel-section--memes" id="allMemesSection">
+            <div class="side-panel-section-heading">
+              <h2 class="side-panel-section-title">All Memes</h2>
             </div>
 
-            <div class="memes-grid" aria-label="Meme templates">
-              <button
-                class="meme-thumb"
-                type="button"
-                data-meme-src="https://i.imgflip.com/1bij.jpg"
-                aria-label="Distracted boyfriend meme"
-              ></button>
-              <button
-                class="meme-thumb"
-                type="button"
-                data-meme-src="https://i.imgflip.com/26am.jpg"
-                aria-label="Grumpy cat meme"
-              ></button>
-              <button
-                class="meme-thumb"
-                type="button"
-                data-meme-src="https://i.imgflip.com/1ur9b0.jpg"
-                aria-label="Drake hotline bling meme"
-              ></button>
-
-              <button
-                class="meme-thumb"
-                type="button"
-                data-meme-src="https://i.imgflip.com/9ehk.jpg"
-                aria-label="Success kid meme"
-              ></button>
-              <button
-                class="meme-thumb meme-thumb--placeholder"
-                type="button"
-                disabled
-                aria-label="Empty meme slot"
-              ></button>
-              <button
-                class="meme-thumb meme-thumb--placeholder"
-                type="button"
-                disabled
-                aria-label="Empty meme slot"
-              ></button>
+            <div id="allMemesGrid" class="memes-grid" aria-label="Meme templates">
+              <!-- DO NOT hard-code <img> tags here; JS will render them -->
             </div>
 
             <button
               type="button"
-              class="button upload-button"
+              class="primary-button upload-button"
               id="upload-trigger"
             >
               Upload your own
@@ -106,32 +76,35 @@
             />
           </section>
 
-          <section class="panel-card">
-            <div class="panel-card-header">
-              <h2 class="panel-title">Style</h2>
-              <div class="panel-divider"></div>
+          <section class="side-panel-section" id="myMemesSection">
+            <div class="side-panel-section-heading">
+              <h2 class="side-panel-section-title">MY MEMES</h2>
+            </div>
+            <div id="myMemesGrid" class="memes-grid memes-grid--custom">
+              <div id="myMemesEmptyState" class="memes-empty-state">
+                No custom memes yet. Upload or drag & drop to save them here.
+              </div>
+            </div>
+          </section>
+
+          <div class="side-panel-divider"></div>
+
+          <section class="side-panel-section side-panel-section--style">
+            <div class="side-panel-section-heading">
+              <h2 class="side-panel-section-title">Style</h2>
             </div>
 
             <div class="style-row">
               <div class="style-label">Font Size</div>
               <div class="font-size-control">
-                <button
-                  type="button"
-                  id="font-size-increase"
-                  class="icon-button"
-                  aria-label="Increase font size"
-                >
-                  +
-                </button>
-                <span id="font-size-value" class="font-size-value">25</span>
-                <button
-                  type="button"
-                  id="font-size-decrease"
-                  class="icon-button"
-                  aria-label="Decrease font size"
-                >
-                  −
-                </button>
+                <input
+                  id="fontSizeSlider"
+                  type="range"
+                  min="10"
+                  max="120"
+                  step="1"
+                />
+                <span id="fontSizeValue" class="font-size-value">25</span>
               </div>
             </div>
 
@@ -168,15 +141,21 @@
             </div>
           </section>
 
-          <button
-            id="download-btn"
-            class="download-cta"
-            type="button"
-            disabled
-          >
-            Download your meme
-          </button>
-          <p id="status-message" class="status" aria-live="polite"></p>
+          <section class="side-panel-section side-panel-section--export">
+            <div class="side-panel-section-heading">
+              <h2 class="side-panel-section-title">Export</h2>
+            </div>
+
+            <button
+              id="download-btn"
+              class="primary-button download-cta"
+              type="button"
+              disabled
+            >
+              Download your meme
+            </button>
+            <p id="status-message" class="status" aria-live="polite"></p>
+          </section>
         </div>
       </aside>
     </main>
